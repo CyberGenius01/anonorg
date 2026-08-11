@@ -9,3 +9,5 @@ hardhat/cache
 hardhat/artifacts
 contracts/cache
 contracts/artifacts
+
+**/*.zip
