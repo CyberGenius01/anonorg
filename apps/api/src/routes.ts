@@ -52,7 +52,7 @@ export async function registerRoutes(app: FastifyInstance) {
       }
     });
     await chainQueue.add("provision-chain", { proposalId: proposal.id }, {
-      jobId: `chain-provision:${proposal.id}`,
+      jobId: `chain-provision-${proposal.id}`,
       attempts: 5,
       backoff: { type: "exponential", delay: 1000 }
     });
@@ -71,7 +71,7 @@ export async function registerRoutes(app: FastifyInstance) {
     const created = await prisma.commitment.create({
       data: {
         organizationId: orgId,
-        chainId: input.chainId,
+        ...(input.chainId ? { chainId: input.chainId } : {}),
         commitment,
         scheme: "POSEIDON2",
         visibility: input.visibility,
@@ -139,14 +139,14 @@ export async function registerRoutes(app: FastifyInstance) {
         organizationAId: input.organizationAId,
         organizationBId: input.organizationBId,
         createdBy: req.principal!.userId,
-        expiresAt: input.expiresAt,
+        ...(input.expiresAt ? { expiresAt: input.expiresAt } : {}),
         permissions: {
           create: input.permissions.map(code => ({ permission: { connect: { code }}, enabled: true }))
         }
       }
     });
     await collaborationQueue.add("project-collaboration", { collaborationId: collaboration.id }, {
-      jobId: `collaboration:${collaboration.id}`
+      jobId: `collaboration-${collaboration.id}`
     });
     return reply.code(201).send(collaboration);
   });

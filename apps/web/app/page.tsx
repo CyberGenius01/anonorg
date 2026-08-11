@@ -90,6 +90,8 @@ export default function Home() {
   const [view, setView] = useState<ViewId>("dashboard");
   const [activeOrgId, setActiveOrgId] = useState<string | null>(null);
   const [orgMenuOpen, setOrgMenuOpen] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("org_a-owner-1@local.test");
+  const [loginPassword, setLoginPassword] = useState("ChangeMe123!");
 
   useEffect(() => {
     async function loadSession() {
@@ -126,7 +128,7 @@ export default function Home() {
     loadSession();
   }, []);
 
-  async function demoLogin() {
+  async function demoLogin(email: string, password: string) {
     setError("");
     setLoading(true);
 
@@ -135,8 +137,8 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: "org_a-owner-1@local.test",
-          password: "ChangeMe123!",
+          email: email,
+          password: password,
         }),
       });
 
@@ -256,7 +258,8 @@ export default function Home() {
             {me ? (
               <button className="btn-ghost" onClick={logout}>Logout</button>
             ) : (
-              <button className="btn-accent" onClick={demoLogin}>Demo Login</button>
+              // <button className="btn-accent" onClick={demoLogin}>Demo Login</button>
+              <button className="btn-accent" onClick={() => demoLogin(loginEmail, loginPassword)}>Demo Login</button>
             )}
           </div>
         </header>
@@ -268,13 +271,58 @@ export default function Home() {
             <div className="card auth-card">
               <h3>Enterprise Blockchain Control Plane</h3>
               <p>
-                Authenticate with the seeded Organization A owner to explore
+                Authenticate as a seeded organization owner to explore
                 tenant isolation, governance, chains and collaboration.
               </p>
-              <button className="btn-accent" onClick={demoLogin}>
-                Login as Organization A Owner
+
+              <label className="field-label" htmlFor="login-email">Email</label>
+              <input
+                id="login-email"
+                className="text-input"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+                autoComplete="username"
+              />
+
+              <label className="field-label" htmlFor="login-password">Password</label>
+              <input
+                id="login-password"
+                className="text-input"
+                type="password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+                autoComplete="current-password"
+              />
+
+              <button className="btn-accent" onClick={() => demoLogin(loginEmail, loginPassword)}>
+                Login
               </button>
-              <div className="cred-hint">org_a-owner-1@local.test</div>
+
+              <div className="cred-hint-row">
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  onClick={() => {
+                    setLoginEmail("org_a-owner-1@local.test");
+                    setLoginPassword("ChangeMe123!");
+                    demoLogin("org_a-owner-1@local.test", "ChangeMe123!");
+                  }}
+                >
+                  Quick login: Org A Owner
+                </button>
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  onClick={() => {
+                    setLoginEmail("org_b-owner-1@local.test");
+                    setLoginPassword("ChangeMe123!");
+                    demoLogin("org_b-owner-1@local.test", "ChangeMe123!");
+                  }}
+                >
+                  Quick login: Org B Owner
+                </button>
+              </div>
+              <div className="cred-hint">Demo password for all seeded users: ChangeMe123!</div>
             </div>
           </div>
         ) : (

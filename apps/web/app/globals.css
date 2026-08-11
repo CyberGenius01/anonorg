@@ -697,6 +697,43 @@ form.stack {
   margin-top: 16px;
 }
 
+.auth-card .field-label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-2);
+  margin: 14px 0 6px;
+}
+
+.auth-card .text-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 11px;
+  border-radius: 7px;
+  border: 1px solid var(--border-0);
+  background: var(--bg-0);
+  color: var(--text-0);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.auth-card .btn-accent {
+  margin-top: 18px;
+  width: 100%;
+}
+
+.auth-card .cred-hint-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.auth-card .cred-hint-row .btn-ghost {
+  flex: 1;
+  font-size: 12px;
+  padding: 8px 10px;
+}
+
+
 /* loading shell */
 
 .boot-screen {

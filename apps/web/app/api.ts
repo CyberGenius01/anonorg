@@ -72,6 +72,10 @@ export async function apiFetch<T = unknown>(path: string, init: RequestInit = {}
   const token = localStorage.getItem("accessToken");
   const headers = new Headers(init.headers);
 
+  if (init.body !== undefined) {
+    headers.set("Content-Type", "application/json");
+  }
+  
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   }
