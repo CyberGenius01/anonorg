@@ -1,0 +1,22 @@
+{
+  "name": "blockchain-paas",
+  "private": true,
+  "packageManager": "pnpm@10.15.0",
+  "scripts": {
+    "dev": "dotenv -e .env -- pnpm run dev:inner",
+    "dev:inner": "pnpm db:generate && pnpm --parallel --filter @paas/api --filter @paas/web --filter @paas/worker dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "db:generate": "pnpm --filter @paas/database prisma:generate",
+    "db:migrate": "dotenv -e .env -- pnpm --filter @paas/database prisma:migrate",
+    "db:seed": "dotenv -e .env -- pnpm --filter @paas/database prisma:seed",
+    "contracts:compile": "pnpm --filter @paas/contracts compile",
+    "contracts:test": "pnpm --filter @paas/contracts test",
+    "setup": "pnpm install && pnpm db:generate && dotenv -e .env -- pnpm db:migrate && dotenv -e .env -- pnpm db:seed"
+  },
+  "devDependencies": {
+    "dotenv-cli": "^11.0.0",
+    "typescript": "^5.9.2"
+  }
+}

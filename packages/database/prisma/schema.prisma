@@ -1,0 +1,463 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum OrganizationStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum ChainStatus {
+  PENDING
+  PROVISIONING
+  RUNNING
+  DEGRADED
+  STOPPED
+  FAILED
+  DESTROYING
+  DESTROYED
+}
+
+enum GovernanceStatus {
+  PROPOSED
+  PENDING_ORG_A_APPROVAL
+  PENDING_ORG_B_APPROVAL
+  PENDING_PLATFORM_APPROVAL
+  APPROVED
+  REJECTED
+  EXECUTING
+  EXECUTED
+  EXPIRED
+}
+
+enum ProposalType {
+  CREATE_CHAIN
+  DELETE_CHAIN
+  DEPLOY_CONTRACT
+  KEY_ROTATION
+  COLLABORATION
+  PERMISSION_CHANGE
+  PLATFORM_CONFIG
+}
+
+enum CollaborationStatus {
+  PROPOSED
+  PENDING_ORG_A_APPROVAL
+  PENDING_ORG_B_APPROVAL
+  ACTIVE
+  SUSPENDED
+  REVOKED
+  EXPIRED
+}
+
+enum MemberStatus {
+  ACTIVE
+  SUSPENDED
+  REMOVED
+}
+
+enum Visibility {
+  PUBLIC
+  ORGANIZATION_PRIVATE
+  COLLABORATION_SHARED
+  USER_PRIVATE
+}
+
+enum PermissionCode {
+  READ_BLOCKS
+  READ_COMMITMENTS
+  CREATE_COMMITMENTS
+  VERIFY_PROOFS
+  SUBMIT_TRANSACTIONS
+  DEPLOY_CONTRACTS
+  READ_EVENTS
+  MANAGE_MEMBERS
+  MANAGE_GOVERNANCE
+  MANAGE_CHAINS
+}
+
+model Platform {
+  id          String   @id
+  name        String
+  ownerM      Int      @default(3)
+  ownerN      Int      @default(5)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  owners      PlatformOwner[]
+  organizations Organization[]
+  auditLogs   AuditLog[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  displayName  String
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  memberships  OrganizationMember[]
+  proposals    GovernanceProposal[] @relation("Proposer")
+  approvals    GovernanceApproval[]
+  auditLogs    AuditLog[]
+  platformOwners PlatformOwner[]
+  collaborationMembers CollaborationMember[]
+}
+
+model PlatformOwner {
+  id         String   @id @default(cuid())
+  platformId String
+  userId     String
+  createdAt  DateTime @default(now())
+  platform   Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([platformId, userId])
+  @@index([platformId])
+}
+
+model Organization {
+  id            String             @id
+  name          String
+  slug          String             @unique
+  status        OrganizationStatus @default(PENDING)
+  ownerM        Int                @default(2)
+  ownerN        Int                @default(3)
+  platformId    String
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  platform      Platform           @relation(fields: [platformId], references: [id])
+  memberships   OrganizationMember[]
+  teams         Team[]
+  projects      Project[]
+  chains        Chain[]
+  commitments   Commitment[]
+  collaborationsA Collaboration[] @relation("OrgA")
+  collaborationsB Collaboration[] @relation("OrgB")
+  proposals     GovernanceProposal[]
+  auditLogs     AuditLog[]
+  apiKeys       ApiKey[]
+  contracts     Contract[]
+  @@index([platformId])
+  @@index([status])
+}
+
+model OrganizationMember {
+  id             String       @id @default(cuid())
+  organizationId String
+  userId         String
+  roleId         String
+  status         MemberStatus @default(ACTIVE)
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           Role         @relation(fields: [roleId], references: [id])
+  @@unique([organizationId, userId])
+  @@index([organizationId, status])
+  @@index([userId])
+}
+
+model Role {
+  id          String               @id @default(cuid())
+  code        String               @unique
+  name        String
+  permissions RolePermission[]
+  members     OrganizationMember[]
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  code        PermissionCode   @unique
+  roleLinks   RolePermission[]
+  collaborationLinks CollaborationPermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  @@id([roleId, permissionId])
+}
+
+model Team {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  @@index([organizationId])
+}
+
+model Project {
+  id             String       @id @default(cuid())
+  organizationId String
+  name           String
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  chains         Chain[]
+  @@index([organizationId])
+}
+
+model Chain {
+  id             String      @id @default(cuid())
+  organizationId String
+  projectId      String?
+  chainId        BigInt      @unique
+  name           String
+  networkType    String
+  rpcEndpoint   String?
+  wsEndpoint    String?
+  rpcSecretRef  String?
+  status         ChainStatus @default(PENDING)
+  version        String
+  consensus     String
+  blockTimeMs   Int
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project        Project?    @relation(fields: [projectId], references: [id])
+  commitments    Commitment[]
+  blocks        Block[]
+  deployments   ChainDeployment[]
+  contracts     Contract[]
+  nodes         ChainNode[]
+  @@index([organizationId, createdAt])
+  @@index([organizationId, status])
+}
+
+model ChainNode {
+  id         String   @id @default(cuid())
+  chainId    String
+  nodeRef    String
+  endpoint   String
+  status     String
+  createdAt  DateTime @default(now())
+  chain      Chain    @relation(fields: [chainId], references: [id], onDelete: Cascade)
+  @@index([chainId])
+}
+
+model ChainDeployment {
+  id          String   @id @default(cuid())
+  chainId     String
+  status      String
+  jobId       String?
+  startedAt   DateTime @default(now())
+  completedAt DateTime?
+  error       String?
+  chain       Chain    @relation(fields: [chainId], references: [id], onDelete: Cascade)
+  @@index([chainId, startedAt])
+}
+
+model Contract {
+  id             String   @id @default(cuid())
+  organizationId String
+  chainId        String
+  name           String
+  address        String
+  artifactRef    String?
+  version        String
+  createdAt      DateTime @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  chain          Chain @relation(fields: [chainId], references: [id], onDelete: Cascade)
+  @@index([organizationId, chainId])
+}
+
+model Commitment {
+  id             String   @id @default(cuid())
+  organizationId String
+  chainId        String?
+  commitment     String
+  scheme         String
+  visibility     Visibility @default(ORGANIZATION_PRIVATE)
+  metadataHash   String?
+  nonceHash      String?
+  createdBy      String
+  createdAt      DateTime @default(now())
+  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  chain         Chain? @relation(fields: [chainId], references: [id])
+  proofs        Proof[]
+  @@unique([organizationId, commitment])
+  @@index([organizationId, createdAt])
+  @@index([chainId, commitment])
+}
+
+model Circuit {
+  id          String   @id
+  name        String
+  version     String
+  provider    String
+  verifierRef String
+  createdAt   DateTime @default(now())
+  proofs      Proof[]
+  @@unique([name, version])
+}
+
+model Proof {
+  id             String   @id @default(cuid())
+  organizationId String
+  circuitId      String
+  commitmentId   String?
+  proof          Json
+  publicInputs   Json
+  status         String
+  verifiedAt     DateTime?
+  createdAt      DateTime @default(now())
+  circuit        Circuit @relation(fields: [circuitId], references: [id])
+  commitment     Commitment? @relation(fields: [commitmentId], references: [id])
+  @@index([organizationId, createdAt])
+}
+
+model Collaboration {
+  id              String              @id @default(cuid())
+  organizationAId String
+  organizationBId String
+  status          CollaborationStatus @default(PROPOSED)
+  createdBy       String
+  expiresAt       DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  organizationA   Organization        @relation("OrgA", fields: [organizationAId], references: [id])
+  organizationB   Organization        @relation("OrgB", fields: [organizationBId], references: [id])
+  members         CollaborationMember[]
+  permissions     CollaborationPermission[]
+  blockViews      CollaborationBlockView[]
+  @@index([organizationAId, status])
+  @@index([organizationBId, status])
+}
+
+model CollaborationMember {
+  id              String @id @default(cuid())
+  collaborationId String
+  userId          String
+  role            String
+  createdAt       DateTime @default(now())
+  collaboration   Collaboration @relation(fields: [collaborationId], references: [id], onDelete: Cascade)
+  user            User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([collaborationId, userId])
+}
+
+model CollaborationPermission {
+  collaborationId String
+  permissionId    String
+  enabled         Boolean @default(false)
+  collaboration   Collaboration @relation(fields: [collaborationId], references: [id], onDelete: Cascade)
+  permission      Permission @relation(fields: [permissionId], references: [id])
+  @@id([collaborationId, permissionId])
+}
+
+model Block {
+  id          String   @id @default(cuid())
+  chainId     String
+  number      BigInt
+  hash        String
+  parentHash  String
+  timestamp   DateTime
+  rawRef      String?
+  createdAt   DateTime @default(now())
+  chain       Chain @relation(fields: [chainId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+  @@unique([chainId, number])
+  @@unique([chainId, hash])
+  @@index([chainId, number])
+}
+
+model Transaction {
+  id            String   @id @default(cuid())
+  blockId       String
+  txHash        String
+  fromAddress   String
+  toAddress     String?
+  value         String
+  payloadRef    String?
+  visibility    Visibility @default(ORGANIZATION_PRIVATE)
+  block         Block    @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  @@unique([blockId, txHash])
+  @@index([txHash])
+}
+
+model CollaborationBlockView {
+  id                String   @id @default(cuid())
+  collaborationId   String
+  sourceChainId     String
+  blockNumber       BigInt
+  blockHash         String
+  visibleTransactions Json
+  visibleCommitments Json
+  visibleEvents     Json
+  createdAt         DateTime @default(now())
+  collaboration     Collaboration @relation(fields: [collaborationId], references: [id], onDelete: Cascade)
+  @@unique([collaborationId, sourceChainId, blockNumber])
+  @@index([collaborationId, createdAt])
+}
+
+model GovernanceProposal {
+  id             String          @id @default(cuid())
+  organizationId String?
+  proposerId     String
+  type           ProposalType
+  status         GovernanceStatus @default(PROPOSED)
+  payload        Json
+  requiredM      Int
+  requiredN      Int
+  expiresAt      DateTime?
+  createdAt      DateTime        @default(now())
+  executedAt     DateTime?
+  organization   Organization?   @relation(fields: [organizationId], references: [id])
+  proposer       User            @relation("Proposer", fields: [proposerId], references: [id])
+  approvals      GovernanceApproval[]
+  @@index([organizationId, status])
+  @@index([proposerId, createdAt])
+}
+
+model GovernanceApproval {
+  id         String   @id @default(cuid())
+  proposalId String
+  approverId String
+  approved   Boolean
+  signature  String?
+  createdAt  DateTime @default(now())
+  proposal   GovernanceProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  approver   User @relation(fields: [approverId], references: [id], onDelete: Cascade)
+  @@unique([proposalId, approverId])
+}
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  platformId     String
+  organizationId String?
+  userId         String?
+  action         String
+  resourceType   String
+  resourceId     String?
+  requestId      String
+  traceId        String?
+  ipHash         String?
+  governanceId   String?
+  result         String
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  platform       Platform @relation(fields: [platformId], references: [id])
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  user           User? @relation(fields: [userId], references: [id])
+  @@index([organizationId, createdAt])
+  @@index([platformId, createdAt])
+}
+
+model ApiKey {
+  id             String   @id @default(cuid())
+  organizationId String
+  name           String
+  keyHash        String   @unique
+  lastUsedAt     DateTime?
+  expiresAt      DateTime?
+  revokedAt      DateTime?
+  createdAt      DateTime @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  @@index([organizationId, revokedAt])
+}

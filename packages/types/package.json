@@ -1,0 +1,16 @@
+{
+  "name": "@paas/types",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "zod": "^4.0.17"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

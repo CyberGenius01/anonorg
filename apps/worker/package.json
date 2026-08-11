@@ -1,0 +1,1 @@
+{"name":"@paas/worker","version":"1.0.0","type":"module","scripts":{"dev":"tsx watch src/worker.ts","build":"tsc -p tsconfig.json"},"dependencies":{"@paas/database":"workspace:*","@paas/events":"workspace:*","@paas/blockchain":"workspace:*","bullmq":"^5.56.0","viem":"^2.37.1"},"devDependencies":{"tsx":"^4.20.3","typescript":"^5.9.2"}}

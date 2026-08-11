@@ -1,0 +1,1 @@
+{"name":"@paas/service-proofs","version":"1.0.0","private":true,"type":"module","scripts":{"build":"tsc -p tsconfig.json"},"dependencies":{"@paas/database":"workspace:*"},"devDependencies":{"typescript":"^5.9.2"}}

@@ -1,0 +1,22 @@
+{
+  "name": "@paas/crypto",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "poseidon-lite": "^0.3.0",
+    "viem": "^2.37.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}
